@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://c7v5ac0in6mul"]
+
+[ext_resource type="Script" uid="uid://dksvmxoojyew6" path="res://Game Project/card/card.gd" id="1_fjcud"]
+[ext_resource type="Texture2D" uid="uid://64o2s1suc5g8" path="res://Game Project/card/square.bmp" id="2_trrkg"]
+
+[node name="Control" type="Control" unique_id=654505591]
+clip_contents = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 100.0
+offset_bottom = 100.0
+pivot_offset_ratio = Vector2(0.5, 0.5)
+script = ExtResource("1_fjcud")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1769511094]
+texture = ExtResource("2_trrkg")
+centered = false
+
+[node name="Label" type="Label" parent="." unique_id=1986759457]
+layout_mode = 0
+offset_right = 100.0
+offset_bottom = 100.0
+pivot_offset_ratio = Vector2(0.5, 0.5)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 32
+text = "test"
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

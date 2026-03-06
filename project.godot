@@ -1,14 +1,33 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
 
 config/name="OWC Game Project"
+run/main_scene="uid://4pqund3nukl7"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GlobalBrain="*uid://bdw16a8wh1atm"
+
+[display]
+
+window/stretch/mode="viewport"
+window/stretch/aspect="expand"
 
 [physics]
 
 3d/physics_engine="Jolt Physics"
+2d/default_gravity=0.0
 
 [rendering]
 
