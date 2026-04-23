@@ -1,0 +1,349 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0d1117;
+    color: #e6edf3;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    max-width: 1400px; /* Increased width to accommodate panels */
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Glassmorphism Panels */
+.glass-header, .glass-panel {
+    background: rgba(22, 27, 34, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1.5rem;
+    z-index: 10;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Moved Header to Top Left */
+.glass-header {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    text-align: left;
+    min-width: 300px;
+}
+
+.glass-header h1 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(90deg, #ff4d4d, #3388ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#hud {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(102, 255, 102, 0.3);
+}
+
+.hud-label {
+    font-size: 0.9rem;
+    color: #8b949e;
+}
+
+.hud-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #66ff66; /* Green matching player */
+}
+
+#system-message {
+    font-size: 0.85rem;
+    color: #c9d1d9;
+    height: 1rem;
+    transition: color 0.3s ease;
+}
+
+#system-message.error {
+    color: #ff6666;
+}
+
+/* Fixed Info Panel on Right */
+#info-panel {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    bottom: 20px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+#info-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.info-content {
+    flex-grow: 1;
+}
+
+#info-desc {
+    font-size: 0.95rem;
+    color: #c9d1d9;
+    line-height: 1.6;
+}
+
+.info-status {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.9rem;
+    color: #8b949e;
+    font-style: italic;
+}
+
+/* Map Container */
+.map-container {
+    width: 100%;
+    height: 95%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    /* Shift slightly to center between the panels */
+    padding-left: 100px;
+    padding-right: 100px;
+}
+
+svg#body-map {
+    width: 100%;
+    height: 100%;
+    max-height: 95vh;
+}
+
+/* Organ Interactivity */
+.organ {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.organ-shape {
+    transition: all 0.3s ease;
+    transform-box: fill-box;
+}
+
+.organ-detail {
+    transform-box: fill-box;
+}
+
+/* Invisible hit area for reliable hover and clicking */
+.hit-area {
+    fill: transparent;
+    pointer-events: all;
+}
+
+.organ:hover .organ-shape, .organ:hover .organ-detail {
+    filter: brightness(1.2);
+    transform-origin: center;
+    transform: scale(1.03);
+}
+
+.organ.active .organ-shape {
+    stroke: #ffffff;
+    stroke-width: 2px;
+    filter: brightness(1.3) drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+}
+
+/* Targetable Organ Pulse Effect */
+.organ.targetable .organ-shape {
+    filter: drop-shadow(0 0 10px rgba(102, 255, 102, 0.6));
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0% { filter: drop-shadow(0 0 5px rgba(102, 255, 102, 0.4)); }
+    50% { filter: drop-shadow(0 0 20px rgba(102, 255, 102, 0.9)); }
+    100% { filter: drop-shadow(0 0 5px rgba(102, 255, 102, 0.4)); }
+}
+
+/* Veins and Arteries Animation */
+.arteries path, .veins path {
+    stroke-dasharray: 12 6;
+    animation: flow 1.5s linear infinite;
+}
+
+@keyframes flow {
+    from {
+        stroke-dashoffset: 18;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Player Animation */
+#player-character {
+    pointer-events: none; /* Allows clicks to pass through to the organ below */
+}
+
+/* UI Views and Menus */
+.view { display: none; width: 100%; height: 100%; }
+.view.active { display: flex; }
+.hidden { display: none !important; }
+
+.centered-menu { flex-direction: column; align-items: center; justify-content: center; width: 400px; height: auto; text-align: center; }
+.game-title { font-size: 2rem; margin-bottom: 2rem; background: linear-gradient(90deg, #ff4d4d, #3388ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.menu-buttons { display: flex; flex-direction: column; gap: 1rem; width: 100%; }
+.glow-btn { background: rgba(51, 136, 255, 0.2); border: 1px solid #3388ff; color: #fff; padding: 1rem 2rem; border-radius: 8px; font-size: 1.2rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 10px rgba(51, 136, 255, 0.3); }
+.glow-btn:hover { background: rgba(51, 136, 255, 0.4); box-shadow: 0 0 20px rgba(51, 136, 255, 0.6); transform: translateY(-2px); }
+.glow-btn.secondary { background: rgba(139, 148, 158, 0.2); border-color: #8b949e; box-shadow: 0 0 10px rgba(139, 148, 158, 0.2); }
+.glow-btn.secondary:hover { background: rgba(139, 148, 158, 0.4); box-shadow: 0 0 20px rgba(139, 148, 158, 0.4); }
+
+/* Settings Toggles */
+.settings-list { width: 100%; display: flex; flex-direction: column; gap: 1.5rem; }
+.setting-item { display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
+.switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #161b22; transition: .4s; border: 1px solid #8b949e; }
+.slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 3px; bottom: 3px; background-color: #fff; transition: .4s; }
+input:checked + .slider { background-color: #3388ff; border-color: #3388ff; }
+input:checked + .slider:before { transform: translateX(26px); }
+
+/* Cinematic View */
+#cinematic-view { position: relative; background-color: #000; overflow: hidden; cursor: pointer; }
+.cinematic-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; transition: all 1s ease; opacity: 0.8; }
+.cinematic-character { position: absolute; bottom: 0; right: 10%; width: 400px; height: 600px; background-size: contain; background-repeat: no-repeat; background-position: bottom right; transition: all 0.5s ease; transform: translateX(100px); opacity: 0; }
+.cinematic-character.show { transform: translateX(0); opacity: 1; }
+.dialogue-container { position: absolute; bottom: 30px; left: 10%; right: 10%; background: rgba(13, 17, 23, 0.9); border: 2px solid #3388ff; border-radius: 12px; padding: 2rem; box-shadow: 0 0 20px rgba(51, 136, 255, 0.4); z-index: 10; }
+.dialogue-speaker { position: absolute; top: -20px; left: 20px; background: #3388ff; color: #fff; padding: 5px 20px; border-radius: 20px; font-weight: bold; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.dialogue-text { font-size: 1.4rem; color: #e6edf3; line-height: 1.5; min-height: 60px; }
+.dialogue-prompt { position: absolute; bottom: 10px; right: 20px; font-size: 0.9rem; color: #8b949e; animation: blink 1.5s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.shrink-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; z-index: 20; }
+.shrink-flash.active { animation: flash 2s ease-out; }
+@keyframes flash { 0% { opacity: 0; } 10% { opacity: 1; } 100% { opacity: 0; } }
+
+.cinematic-character.left { left: 5%; transform: translateX(-50px); background-position: bottom left; }
+.cinematic-character.right { right: 5%; transform: translateX(50px); background-position: bottom right; }
+.cinematic-character.dim { filter: brightness(0.4); transform: scale(0.95); z-index: 5; }
+.cinematic-character.show.dim { transform: scale(0.95) translateX(0); }
+
+.cinematic-character.shrink { animation: shrinkAnim 2s forwards; }
+@keyframes shrinkAnim { 0% { filter: hue-rotate(0deg); opacity: 1; } 50% { filter: hue-rotate(90deg) brightness(2); opacity: 0.8; } 90% { filter: hue-rotate(180deg) brightness(5); opacity: 0.5; transform: scale(0.1) translateY(200px); } 100% { transform: scale(0) translateY(200px); opacity: 0; } }
+.green-nano-cell { position: absolute; width: 24px; height: 24px; background-color: #66ff66; border-radius: 50%; box-shadow: 0 0 15px #66ff66; top: 60%; right: 15%; opacity: 0; pointer-events: none; z-index: 30; }
+.green-nano-cell.fly-in { animation: flyIntoMouth 3s forwards; }
+@keyframes flyIntoMouth { 0% { opacity: 0; transform: scale(3); right: 15%; top: 60%; } 10% { opacity: 1; transform: scale(2); } 50% { right: 50%; top: 40%; transform: scale(1); } 100% { right: 80%; top: 35%; transform: scale(0.1); opacity: 0; } }
+
+.nano-sukru-anim { position: absolute; width: 100px; height: 120px; top: 40%; left: 45%; border-radius: 50%; background: rgba(51, 136, 255, 0.3); box-shadow: 0 0 30px #3388ff; display: flex; justify-content: center; align-items: center; animation: float 3s ease-in-out infinite; z-index: 25; }
+.nano-sukru-anim img { width: 80%; height: auto; }
+.nano-sukru-anim.hidden { display: none; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+/* Pause Menu */
+#pause-menu {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+}
+.pause-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+/* Action RPG Level View */
+#level-view {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-color: #1a0a0a;
+    overflow: hidden;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+#level-ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 300px;
+    padding: 1.5rem;
+    z-index: 10;
+}
+
+#level-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #ffb3b3;
+    text-shadow: 0 0 10px rgba(255, 102, 102, 0.8);
+}
+
+.hp-bar-container {
+    width: 100%;
+    height: 20px;
+    background-color: #330000;
+    border: 2px solid #ff4d4d;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.hp-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000, #ff6666);
+    transition: width 0.2s ease-out;
+}
+
+#level-stats {
+    font-size: 1.1rem;
+    color: #ffd700;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+#game-over-screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(50, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+

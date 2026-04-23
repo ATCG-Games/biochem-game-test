@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biochemistry Circulatory Game Map</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Main Menu -->
+        <div id="main-menu" class="view active glass-panel centered-menu">
+            <h1 class="game-title">Biochemistry<br>Circulatory Game</h1>
+            <div class="menu-buttons">
+                <button id="btn-play" class="glow-btn">Play Game</button>
+                <button id="btn-settings" class="glow-btn secondary">Settings</button>
+            </div>
+        </div>
+
+        <!-- Settings Menu -->
+        <div id="settings-menu" class="view hidden glass-panel centered-menu">
+            <h1 class="game-title">Settings</h1>
+            <div class="settings-list">
+                <div class="setting-item">
+                    <span>Sound Effects (SFX)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-sfx" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>Background Music</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-music" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            <button id="btn-back" class="glow-btn secondary" style="margin-top: 2rem;">Back to Menu</button>
+        </div>
+
+        <!-- Cinematic View -->
+        <div id="cinematic-view" class="view hidden">
+            <div id="cinematic-bg" class="cinematic-bg"></div>
+            <div id="cinematic-char-left" class="cinematic-character left"></div>
+            <div id="cinematic-char-right" class="cinematic-character right"></div>
+            <div id="nano-cell-anim" class="green-nano-cell"></div>
+            <div id="nano-sukru-anim" class="nano-sukru-anim hidden">
+                <img src="assets/dr_sukru.png" alt="Nano Sukru" />
+            </div>
+            
+            <div class="dialogue-container">
+                <div id="dialogue-speaker" class="dialogue-speaker">Dr. Nano</div>
+                <div id="dialogue-text" class="dialogue-text">...</div>
+                <div class="dialogue-prompt">Click to continue</div>
+            </div>
+            
+            <!-- Shrink Flash Overlay -->
+            <div id="shrink-flash" class="shrink-flash"></div>
+        </div>
+
+        <!-- Game View -->
+        <div id="game-view" class="view hidden">
+            <!-- UI Overlay - Moved to Left -->
+        <header class="glass-header">
+            <h1>Human Circulatory System</h1>
+            <div id="hud">
+                <span class="hud-label">Current Location:</span>
+                <span id="current-location" class="hud-value">Heart</span>
+            </div>
+            <p id="system-message">Click on an organ connected by a vein or artery to travel.</p>
+        </header>
+
+        <!-- Info Panel - Moved to Right -->
+        <aside id="info-panel" class="glass-panel">
+            <h2 id="info-title">Hover over an organ</h2>
+            <div class="info-content">
+                <p id="info-desc">Detailed biochemistry information will appear here.</p>
+            </div>
+            <div class="info-status">
+                <span id="info-travel"></span>
+                <button id="btn-enter-level" class="glow-btn hidden" style="margin-top: 10px; width: 100%;">Enter Organ</button>
+            </div>
+        </aside>
+
+        <!-- SVG Map -->
+        <div class="map-container">
+            <svg id="body-map" viewBox="0 0 800 1000" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <!-- Glow Filters -->
+                    <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <filter id="glow-green" x="-30%" y="-30%" width="160%" height="160%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <filter id="organ-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.6"/>
+                    </filter>
+                    
+                    <!-- Flat Vector Organ Gradients matching the reference image -->
+                    <radialGradient id="grad-brain" cx="40%" cy="40%" r="60%">
+                        <stop offset="0%" stop-color="#ff9999" />
+                        <stop offset="100%" stop-color="#ff6666" />
+                    </radialGradient>
+                    <radialGradient id="grad-lung" cx="40%" cy="40%" r="60%">
+                        <stop offset="0%" stop-color="#e53935" />
+                        <stop offset="100%" stop-color="#c62828" />
+                    </radialGradient>
+                    <radialGradient id="grad-heart" cx="30%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#ef5350" />
+                        <stop offset="100%" stop-color="#b71c1c" />
+                    </radialGradient>
+                    <radialGradient id="grad-liver" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#880e4f" />
+                        <stop offset="100%" stop-color="#560027" />
+                    </radialGradient>
+                    <radialGradient id="grad-stomach" cx="40%" cy="40%" r="60%">
+                        <stop offset="0%" stop-color="#ffb74d" />
+                        <stop offset="100%" stop-color="#f57c00" />
+                    </radialGradient>
+                    <radialGradient id="grad-kidney" cx="30%" cy="30%" r="60%">
+                        <stop offset="0%" stop-color="#b71c1c" />
+                        <stop offset="100%" stop-color="#7f0000" />
+                    </radialGradient>
+                    <radialGradient id="grad-intestine-large" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#ef9a9a" />
+                        <stop offset="100%" stop-color="#e57373" />
+                    </radialGradient>
+                    <radialGradient id="grad-intestine-small" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#ffcc80" />
+                        <stop offset="100%" stop-color="#ffb74d" />
+                    </radialGradient>
+                    
+                    <!-- Player Gradient -->
+                    <radialGradient id="grad-player" cx="30%" cy="30%" r="60%">
+                        <stop offset="0%" stop-color="#66ff66" />
+                        <stop offset="70%" stop-color="#00cc00" />
+                        <stop offset="100%" stop-color="#006600" />
+                    </radialGradient>
+
+                    <!-- Flat Fleshy Body Gradient -->
+                    <linearGradient id="body-flesh" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#f5cbb8" />
+                        <stop offset="20%" stop-color="#fbd6c6" />
+                        <stop offset="50%" stop-color="#ffe0d2" />
+                        <stop offset="80%" stop-color="#fbd6c6" />
+                        <stop offset="100%" stop-color="#f5cbb8" />
+                    </linearGradient>
+                    <linearGradient id="cavity-light" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#ffe8dd" />
+                        <stop offset="100%" stop-color="#f5cbb8" />
+                    </linearGradient>
+                </defs>
+
+                <!-- FULL HUMAN BODY CROSS-SECTION (Coronal Cut) -->
+                <g id="body-cross-section">
+                    <!-- Base skin layer from uploaded image -->
+                    <image href="assets/body_transparent.png" x="120" y="-10" width="560" height="1020" preserveAspectRatio="none" opacity="0.9" />
+                </g>
+
+                <!-- INTERNAL SYSTEM GROUP (Translated to fit the new body image) -->
+                <g id="internal-system" transform="translate(0, 60) scale(0.95)">
+                    <!-- ARTERIES (RED) -->
+                    <g class="arteries" stroke="#ff3333" stroke-width="5" fill="none" filter="url(#glow-red)" stroke-linecap="round">
+                    <path id="path-Heart-Brain" d="M420,330 C420,250 400,90 400,30" />
+                    <path id="path-Mouth-Stomach" d="M410,118 C410,188 440,300 460,450" stroke="#fbd6c6" stroke-width="8" stroke-dasharray="0" filter="none" opacity="0.5"/> <!-- Esophagus (not artery, just path) -->
+                    <path id="path-Heart-LeftLung" d="M410,350 C380,350 330,330 310,330" />
+                    <path id="path-Heart-RightLung" d="M430,350 C460,350 490,330 510,330" />
+                    <path id="path-Heart-Liver" d="M420,380 C420,430 360,460 340,480" />
+                    <path id="path-Heart-Stomach" d="M420,380 C420,450 460,470 470,490" />
+                    <path id="path-Heart-LeftKidney" d="M420,380 C420,500 370,550 360,590" />
+                    <path id="path-Heart-RightKidney" d="M420,380 C420,500 460,550 460,590" />
+                    <path id="path-Heart-Intestines" d="M420,380 C420,600 400,680 400,720" />
+                    <path id="path-Stomach-Pancreas" d="M460,520 C450,540 430,550 420,550" />
+                    <path id="path-Stomach-Spleen" d="M500,490 C510,490 520,500 520,510" />
+                    <path id="path-LeftKidney-Bladder" d="M370,640 C390,700 410,750 410,800" />
+                    <path id="path-RightKidney-Bladder" d="M450,640 C430,700 410,750 410,800" />
+                </g>
+
+                <!-- VEINS (BLUE) -->
+                <g class="veins" stroke="#3388ff" stroke-width="5" fill="none" filter="url(#glow-blue)" stroke-linecap="round">
+                    <path id="path-Brain-Heart" d="M410,30 C410,110 435,280 430,340" />
+                    <path id="path-Stomach-Mouth" d="M460,450 C440,300 410,188 410,118" stroke="#fbd6c6" stroke-width="8" stroke-dasharray="0" filter="none" opacity="0.5"/>
+                    <path id="path-LeftLung-Heart" d="M310,345 C350,360 390,370 415,365" />
+                    <path id="path-RightLung-Heart" d="M510,345 C480,360 450,370 425,365" />
+                    <path id="path-Liver-Heart" d="M350,490 C380,480 430,420 430,375" />
+                    <path id="path-Stomach-Heart" d="M480,500 C470,460 435,420 430,375" />
+                    <path id="path-LeftKidney-Heart" d="M370,600 C390,560 435,450 430,375" />
+                    <path id="path-RightKidney-Heart" d="M470,600 C450,560 435,450 430,375" />
+                    <!-- Portal vein from Intestines to Liver -->
+                    <path id="path-Intestines-Liver" d="M410,720 C420,650 380,520 350,490" />
+                    <path id="path-Pancreas-Liver" d="M420,550 C400,550 380,530 360,510" />
+                    <path id="path-Spleen-Liver" d="M520,510 C500,480 420,460 360,490" />
+                    <path id="path-Bladder-Heart" d="M410,800 C410,750 440,600 430,375" />
+                </g>
+
+                <!-- ORGANS (NODES) -->
+                <g class="organs" filter="url(#organ-shadow)">
+                    <!-- Brain -->
+                    <g class="organ" id="organ-Brain" data-name="Brain" data-desc="The command center of the body. Requires a massive amount of glucose and oxygen to generate ATP for continuous neural activity. Contains intricate folds (gyri and sulci) to increase surface area." transform="translate(0, -90)">
+                        <circle cx="410" cy="90" r="70" class="hit-area" />
+                        <!-- Brain Base -->
+                        <path d="M350,110 C340,70 370,40 410,40 C450,40 480,70 470,110 C460,140 440,150 410,150 C380,150 360,140 350,110 Z" fill="url(#grad-brain)" class="organ-shape" />
+                        <!-- Brain Folds (Gyri/Sulci detail) -->
+                        <path d="M365,70 C380,60 390,80 410,65 C430,50 445,70 455,80 M355,90 C370,100 390,80 410,100 C430,120 450,100 465,110 M360,120 C380,130 400,110 410,135 C420,160 440,130 450,135" stroke="#c62828" stroke-width="2.5" fill="none" class="organ-detail"/>
+                        <path d="M410,40 L410,150" stroke="#c62828" stroke-width="2" fill="none" class="organ-detail"/> <!-- Hemisphere divide -->
+                    </g>
+                    
+                    <!-- Left Lung -->
+                    <g class="organ" id="organ-LeftLung" data-name="Left Lung" data-desc="Responsible for respiration. Exchanges oxygen from the air into the bloodstream and expels carbon dioxide. It has two lobes to accommodate the heart.">
+                        <ellipse cx="310" cy="320" rx="60" ry="90" class="hit-area" />
+                        <!-- Anatomical lung shape -->
+                        <path d="M330,230 C310,210 280,240 270,280 C260,330 250,380 280,400 C310,420 340,390 350,360 C360,330 340,280 330,230 Z" fill="url(#grad-lung)" class="organ-shape" />
+                        <path d="M310,250 C300,280 280,310 270,330 M310,260 C320,290 330,320 335,340 M300,290 C280,300 275,305 270,300" stroke="#f0f0f0" stroke-width="2" fill="none" opacity="0.6" class="organ-detail"/> <!-- Bronchial tubes hint -->
+                    </g>
+                    
+                    <!-- Right Lung -->
+                    <g class="organ" id="organ-RightLung" data-name="Right Lung" data-desc="The right lung has three lobes and is slightly larger than the left lung. It is the primary site of systemic gas exchange.">
+                        <ellipse cx="510" cy="320" rx="60" ry="90" class="hit-area" />
+                        <path d="M510,230 C530,210 560,240 570,280 C580,330 590,380 560,400 C530,420 500,390 490,360 C480,330 500,280 510,230 Z" fill="url(#grad-lung)" class="organ-shape" />
+                        <path d="M510,250 C520,280 540,310 550,330 M510,260 C500,290 490,320 485,340 M520,290 C540,300 545,305 550,300" stroke="#f0f0f0" stroke-width="2" fill="none" opacity="0.6" class="organ-detail"/> <!-- Bronchial tubes hint -->
+                    </g>
+                    
+                    <!-- Liver -->
+                    <g class="organ" id="organ-Liver" data-name="Liver" data-desc="The body's primary metabolic factory. It filters blood from the digestive tract, detoxifies chemicals, secretes bile, and stores glycogen.">
+                        <ellipse cx="360" cy="470" rx="100" ry="60" class="hit-area" />
+                        <!-- Distinct wedge shape with right and left lobes -->
+                        <path d="M270,460 C260,430 300,410 350,410 C410,410 440,430 450,470 C460,510 400,500 360,520 C320,540 280,490 270,460 Z" fill="url(#grad-liver)" class="organ-shape" />
+                        <!-- Gall Bladder -->
+                        <path d="M350,510 C340,530 350,550 365,540 C370,530 370,510 350,510 Z" fill="#66bb6a" class="organ-detail"/> 
+                    </g>
+                    
+                    <!-- Stomach -->
+                    <g class="organ" id="organ-Stomach" data-name="Stomach" data-desc="A muscular J-shaped organ that uses highly acidic gastric juices (HCl) and enzymes like pepsin to break down proteins.">
+                        <ellipse cx="460" cy="490" rx="60" ry="50" class="hit-area" />
+                        <!-- J-shape stomach -->
+                        <path d="M420,440 C460,430 500,440 510,480 C520,520 480,560 440,540 C410,520 420,480 440,470 C450,460 430,450 420,440 Z" fill="url(#grad-stomach)" class="organ-shape" />
+                    </g>
+                    
+                    <!-- Kidneys -->
+                    <g class="organ" id="organ-LeftKidney" data-name="Left Kidney" data-desc="Filters blood to produce urine, removing urea and excess ions. Maintains blood pressure and electrolyte balance.">
+                        <ellipse cx="350" cy="600" rx="40" ry="60" class="hit-area" />
+                        <!-- Bean shape -->
+                        <path d="M350,560 C370,550 390,570 380,600 C370,630 340,640 330,610 C320,580 330,570 350,560 Z" fill="url(#grad-kidney)" class="organ-shape" />
+                        <!-- Adrenal gland -->
+                        <path d="M340,560 C350,540 370,550 360,570 Z" fill="#ffcc66" opacity="0.9" class="organ-shape"/>
+                    </g>
+                    <g class="organ" id="organ-RightKidney" data-name="Right Kidney" data-desc="Filters blood to produce urine. The right kidney sits slightly lower than the left due to the liver above it.">
+                        <ellipse cx="460" cy="600" rx="40" ry="60" class="hit-area" />
+                        <!-- Bean shape -->
+                        <path d="M470,560 C450,550 430,570 440,600 C450,630 480,640 490,610 C500,580 490,570 470,560 Z" fill="url(#grad-kidney)" class="organ-shape" />
+                        <!-- Adrenal gland -->
+                        <path d="M480,560 C470,540 450,550 460,570 Z" fill="#ffcc66" opacity="0.9" class="organ-shape"/>
+                    </g>
+                    
+                    <!-- Intestines -->
+                    <g class="organ" id="organ-Intestines" data-name="Intestines" data-desc="The primary site of nutrient absorption. The small intestine uses villi to absorb nutrients, while the large intestine absorbs water and forms waste.">
+                        <rect x="300" y="650" width="220" height="190" rx="20" class="hit-area" />
+                        <!-- Large Intestine (Outer frame) -->
+                        <path d="M340,790 C320,740 320,680 360,670 C410,660 460,660 480,670 C510,690 510,750 490,790 C480,810 460,820 440,820" stroke="url(#grad-intestine-large)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" fill="none" class="organ-shape" />
+                        <!-- Large intestine haustra segments -->
+                        <path d="M330,700 L350,700 M330,730 L350,730 M335,760 L355,760 M470,700 L490,700 M470,730 L490,730 M465,760 L485,760 M380,660 L380,680 M415,660 L415,680 M450,660 L450,680" stroke="#e53935" stroke-width="2" opacity="0.6" />
+
+                        <!-- Small Intestine (Inner squiggles) -->
+                        <path d="M370,700 C390,680 410,720 380,730 C360,740 380,770 400,750 C420,730 450,750 430,770 C410,790 450,810 470,780 C480,760 450,710 430,720 C400,730 420,690 440,690" stroke="url(#grad-intestine-small)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none" class="organ-shape" />
+                    </g>
+                    
+                    <!-- Heart (Rendered Last to be on top) -->
+                    <g class="organ" id="organ-Heart" data-name="Heart" data-desc="The muscular pump of the circulatory system. It propels oxygenated blood to the body and deoxygenated blood to the lungs.">
+                        <circle cx="420" cy="350" r="60" class="hit-area" />
+                        <!-- Aorta / Superior Vessels -->
+                        <path d="M410,320 C410,290 430,290 430,320" stroke="#ef5350" stroke-width="12" fill="none" class="organ-shape"/>
+                        <path d="M425,320 L435,300" stroke="#3366cc" stroke-width="8" fill="none" class="organ-shape"/>
+                        <!-- Ventricles / Main Body -->
+                        <path d="M420,320 C380,310 370,350 400,380 C420,400 420,400 420,400 C420,400 420,400 440,380 C470,350 460,310 420,320 Z" fill="url(#grad-heart)" class="organ-shape" />
+                        <path d="M420,330 C430,360 410,380 420,400" stroke="#b71c1c" stroke-width="2" fill="none" class="organ-detail"/> <!-- Septum hint -->
+                    </g>
+                    
+                    <!-- NEW ORGANS -->
+                    
+                    <!-- Mouth / Esophagus -->
+                    <g class="organ" id="organ-Mouth" data-name="Mouth" data-desc="The entrance to the digestive and respiratory tracts. This is where our journey begins!" transform="translate(0, -62)">
+                        <circle cx="410" cy="180" r="20" class="hit-area" />
+                        <!-- Upper Lip -->
+                        <path d="M392,180 Q402,173 410,175 Q418,173 428,180 Q410,181 392,180 Z" fill="#ef5350" class="organ-shape" />
+                        <!-- Lower Lip -->
+                        <path d="M392,180 Q410,181 428,180 Q410,190 392,180 Z" fill="#ef9a9a" class="organ-shape" />
+                        <!-- Lip Line -->
+                        <path d="M393,180 Q410,181 427,180" stroke="#880e4f" stroke-width="1.5" fill="none" class="organ-detail" />
+                    </g>
+
+                    <!-- Pancreas -->
+                    <g class="organ" id="organ-Pancreas" data-name="Pancreas" data-desc="Produces digestive enzymes and regulates blood sugar levels by secreting insulin and glucagon.">
+                        <ellipse cx="420" cy="550" rx="40" ry="15" class="hit-area" />
+                        <path d="M380,550 C390,530 420,530 440,550 C460,570 420,570 380,550 Z" fill="#ffca28" class="organ-shape" />
+                        <!-- bumpy texture -->
+                        <path d="M390,550 C395,545 400,555 405,550 M410,550 C415,545 420,555 425,550" stroke="#f57f17" stroke-width="2" fill="none" class="organ-detail" />
+                    </g>
+
+                    <!-- Spleen -->
+                    <g class="organ" id="organ-Spleen" data-name="Spleen" data-desc="Acts as a blood filter. It recognizes and removes old, malformed, or damaged red blood cells.">
+                        <circle cx="520" cy="510" r="25" class="hit-area" />
+                        <path d="M505,510 C505,490 535,490 535,510 C535,530 505,530 505,510 Z" fill="#880e4f" class="organ-shape" />
+                    </g>
+
+                    <!-- Bladder -->
+                    <g class="organ" id="organ-Bladder" data-name="Bladder" data-desc="A muscular sac in the pelvis. It stores urine before it leaves the body.">
+                        <ellipse cx="410" cy="810" rx="35" ry="25" class="hit-area" />
+                        <path d="M380,800 C380,780 440,780 440,800 C450,830 370,830 380,800 Z" fill="#ffb74d" class="organ-shape" />
+                    </g>
+                </g>
+
+                <!-- PLAYER CHARACTER (Mini Dr. Şükrü) -->
+                <g id="player-character" transform="translate(410, 118)">
+                    <!-- Protective Nano-Bubble -->
+                    <circle cx="0" cy="0" r="16" fill="rgba(102, 255, 102, 0.4)" filter="url(#glow-green)" />
+                    <circle cx="0" cy="0" r="16" stroke="#66ff66" stroke-width="2" fill="none" />
+                    <!-- Dr. Şükrü Sprite -->
+                    <image href="assets/dr_sukru.png" x="-12" y="-15" width="24" height="30" />
+                </g>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Pause Menu Overlay -->
+        <div id="pause-menu" class="view hidden">
+            <div class="pause-overlay"></div>
+            <div class="glass-panel centered-menu" style="z-index: 100;">
+                <h1 class="game-title">Game Paused</h1>
+                <div class="settings-list" style="margin-bottom: 2rem;">
+                    <div class="setting-item">
+                        <span>Sound Effects (SFX)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="pause-toggle-sfx" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span>Background Music</span>
+                        <label class="switch">
+                            <input type="checkbox" id="pause-toggle-music" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="menu-buttons">
+                    <button id="btn-resume" class="glow-btn">Resume</button>
+                    <button id="btn-restart" class="glow-btn">Restart Game</button>
+                    <button id="btn-leave" class="glow-btn secondary">Leave Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Level View (Action RPG Canvas) -->
+    <div id="level-view" class="view hidden">
+        <canvas id="game-canvas"></canvas>
+        <div id="level-ui" class="glass-panel">
+            <h2 id="level-title">Organ Name</h2>
+            <div class="hp-bar-container">
+                <div id="player-hp-fill" class="hp-fill"></div>
+            </div>
+            <div id="level-stats">Level: <span id="player-level">1</span> | XP: <span id="player-xp">0</span></div>
+            <button id="btn-exit-level" class="glow-btn secondary" style="margin-top: 15px;">Retreat to Map</button>
+        </div>
+        <div id="game-over-screen" class="hidden glass-panel centered-menu">
+            <h1 style="color: #ff3333;">YOU DIED</h1>
+            <button id="btn-respawn" class="glow-btn">Respawn at Heart</button>
+        </div>
+    </div>
+
+    <script src="engine.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
