@@ -40,21 +40,31 @@ body {
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* Moved Header to Top Left */
-.glass-header {
+/* Left Sidebar — HUD + Objectives merged */
+#left-panel {
     position: absolute;
-    top: 20px;
     left: 20px;
-    text-align: left;
-    min-width: 300px;
+    top: 20px;
+    bottom: 20px;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
 }
 
-.glass-header h1 {
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
+.left-panel-title {
+    font-size: 1.3rem;
     background: linear-gradient(90deg, #ff4d4d, #3388ff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-bottom: 0.25rem;
+}
+
+.panel-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 0.25rem 0;
 }
 
 #hud {
@@ -120,6 +130,118 @@ body {
     line-height: 1.6;
 }
 
+
+.objective-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #3388ff;
+    margin-bottom: 0.3rem;
+}
+
+.objective-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    background: rgba(51, 136, 255, 0.07);
+    border: 1px solid rgba(51, 136, 255, 0.25);
+    border-radius: 10px;
+    transition: all 0.4s ease;
+}
+
+.objective-item.completed {
+    background: rgba(102, 255, 102, 0.06);
+    border-color: rgba(102, 255, 102, 0.3);
+}
+
+.objective-item.locked {
+    opacity: 0.5;
+    filter: grayscale(1);
+    pointer-events: none;
+}
+
+#esophagus-view, #stomach-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2000;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#eso-ui {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 260px;
+}
+
+.objective-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #3388ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: #3388ff;
+    transition: all 0.4s ease;
+    margin-top: 2px;
+}
+
+.objective-item.completed .objective-icon {
+    border-color: #66ff66;
+    background: rgba(102, 255, 102, 0.2);
+    color: #66ff66;
+    content: '✓';
+}
+
+.objective-text {
+    font-size: 0.92rem;
+    color: #c9d1d9;
+    line-height: 1.5;
+}
+
+.objective-item.completed .objective-text {
+    color: #66ff99;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Toast notification for completed objective */
+#objective-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.85);
+    background: rgba(14, 20, 30, 0.97);
+    border: 1px solid rgba(102, 255, 102, 0.4);
+    border-radius: 14px;
+    padding: 1.4rem 2rem;
+    font-size: 1.1rem;
+    color: #66ff99;
+    text-align: center;
+    z-index: 500;
+    pointer-events: none;
+    opacity: 0;
+    box-shadow: 0 0 40px rgba(102, 255, 102, 0.15), 0 8px 32px rgba(0,0,0,0.6);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 500px;
+}
+
+#objective-toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
 .info-status {
     margin-top: auto;
     padding-top: 1rem;
@@ -129,6 +251,7 @@ body {
     font-style: italic;
 }
 
+
 /* Map Container */
 .map-container {
     width: 100%;
@@ -137,9 +260,9 @@ body {
     justify-content: center;
     align-items: center;
     position: relative;
-    /* Shift slightly to center between the panels */
-    padding-left: 100px;
-    padding-right: 100px;
+    /* Reserve space for left panel (300+20+20=340) and right panel (320+20+20=360) */
+    padding-left: 340px;
+    padding-right: 360px;
 }
 
 svg#body-map {
@@ -268,9 +391,9 @@ input:checked + .slider:before { transform: translateX(26px); }
 
 /* Pause Menu */
 #pause-menu {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 999;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999;
     justify-content: center;
     align-items: center;
 }
@@ -345,5 +468,34 @@ input:checked + .slider:before { transform: translateX(26px); }
     display: flex;
     flex-direction: column;
     z-index: 100;
+}
+
+/* Stomach Mini-game Styles */
+.gauge-container {
+    width: 100%;
+}
+
+.gauge-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #8b949e;
+    margin-bottom: 5px;
+}
+
+#ph-marker {
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stomach-controls .glow-btn {
+    transition: all 0.2s ease;
+}
+
+.stomach-controls .glow-btn:active {
+    transform: scale(0.95);
+}
+
+#stomach-feedback {
+    transition: opacity 0.3s ease;
 }
 

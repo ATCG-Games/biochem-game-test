@@ -152,15 +152,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let isPreBattleCinematic = false; // declared here so the click handler can see it
+
     function startCinematic() {
+        isPreBattleCinematic = false;
         switchView(cinematicView);
         currentScene = 0;
         renderScene();
     }
 
     cinematicView.addEventListener('click', () => {
-        currentScene++;
-        renderScene();
+        if (isPreBattleCinematic) {
+            preBattleSceneIndex++;
+            renderPreBattleScene();
+        } else {
+            currentScene++;
+            renderScene();
+        }
     });
 
     // Buttons
@@ -168,107 +176,90 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSettings = document.getElementById('btn-settings');
     const btnBack = document.getElementById('btn-back');
     
-    // Settings toggles
-    const toggleSfx = document.getElementById('toggle-sfx');
-    const toggleMusic = document.getElementById('toggle-music');
     let sfxEnabled = true;
     let musicEnabled = true;
 
-    // Pause Menu Elements
-    const pauseMenu = document.getElementById('pause-menu');
-    const btnResume = document.getElementById('btn-resume');
-    const btnRestart = document.getElementById('btn-restart');
-    const btnLeave = document.getElementById('btn-leave');
-    const pauseToggleSfx = document.getElementById('pause-toggle-sfx');
-    const pauseToggleMusic = document.getElementById('pause-toggle-music');
-    let isPaused = false;
+    // Map Pause Elements
+    const mapPauseMenu = document.getElementById('map-pause-menu');
+    const btnMapResume = document.getElementById('btn-map-resume');
+    const btnMapExit = document.getElementById('btn-map-exit');
+    let isMapPaused = false;
+
+    function toggleMapPause() {
+        if (!mapPauseMenu) return;
+        isMapPaused = !isMapPaused;
+        if (isMapPaused) {
+            mapPauseMenu.classList.remove('hidden');
+        } else {
+            mapPauseMenu.classList.add('hidden');
+        }
+    }
+
+    function exitToMainMenu() {
+        isMapPaused = false;
+        if (mapPauseMenu) mapPauseMenu.classList.add('hidden');
+        switchView(mainMenu);
+        // Reset any temporary state if needed
+    }
+
+    if (btnMapResume) btnMapResume.addEventListener('click', toggleMapPause);
+    if (btnMapExit) btnMapExit.addEventListener('click', exitToMainMenu);
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            // Only trigger map pause if we are in game-view or cinematic-view
+            // and NOT in a mini-game (those have their own Esc handlers)
+            const isGameActive = !gameView.classList.contains('hidden');
+            const isCinematicActive = !cinematicView.classList.contains('hidden');
+            const isLevelActive = !levelView.classList.contains('hidden');
+            const isEsoActive = !document.getElementById('esophagus-view').classList.contains('hidden');
+            const isStomachActive = !document.getElementById('stomach-view').classList.contains('hidden');
+
+            if ((isGameActive || isCinematicActive) && !isLevelActive && !isEsoActive && !isStomachActive) {
+                toggleMapPause();
+            }
+        }
+    });
 
     // View Switching Logic
+    const allViews = document.querySelectorAll('.view');
     function switchView(showView) {
-        mainMenu.classList.replace('active', 'hidden');
-        settingsMenu.classList.replace('active', 'hidden');
-        gameView.classList.replace('active', 'hidden');
-        cinematicView.classList.replace('active', 'hidden');
-        levelView.classList.replace('active', 'hidden');
-        showView.classList.replace('hidden', 'active');
+        allViews.forEach(v => {
+            v.classList.remove('active');
+            v.classList.add('hidden');
+        });
+        showView.classList.remove('hidden');
+        showView.classList.add('active');
     }
+    window.switchView = switchView; // Make globally accessible
+    window.gameView = gameView;
 
-    btnPlay.addEventListener('click', () => {
-        startCinematic();
+    btnPlay.addEventListener('click', () => { 
+        freeRoam = false;
+        document.getElementById('objective-panel').classList.remove('hidden');
+        startCinematic(); 
+    });
+    
+    document.getElementById('btn-view-body').addEventListener('click', () => {
+        freeRoam = true;
+        currentLocation = 'Mouth';
+        // Reset player pos
+        player.setAttribute('transform', `translate(410, 118)`);
+        switchView(gameView);
+        document.getElementById('objective-panel').classList.add('hidden');
+        updateTargetableOrgans();
+        showCurrentLocationInfo();
+        showMessage("Free Roam Mode: Explore the circulatory system freely.");
     });
 
-    btnSettings.addEventListener('click', () => {
-        switchView(settingsMenu);
-    });
-
-    btnBack.addEventListener('click', () => {
-        switchView(mainMenu);
-    });
+    btnSettings.addEventListener('click', () => { switchView(settingsMenu); });
+    btnBack.addEventListener('click', () => { switchView(mainMenu); });
 
     // Settings Logic
-    toggleSfx.addEventListener('change', (e) => {
-        sfxEnabled = e.target.checked;
-        if (pauseToggleSfx) pauseToggleSfx.checked = sfxEnabled;
-    });
-
-    toggleMusic.addEventListener('change', (e) => {
-        musicEnabled = e.target.checked;
-        if (pauseToggleMusic) pauseToggleMusic.checked = musicEnabled;
-    });
-
-    // Pause Menu Logic
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && gameView.classList.contains('active')) {
-            togglePause();
-        }
-    });
-
-    function togglePause() {
-        if (!pauseMenu) return;
-        isPaused = !isPaused;
-        if (isPaused) {
-            pauseMenu.classList.replace('hidden', 'active');
-        } else {
-            pauseMenu.classList.replace('active', 'hidden');
-        }
-    }
-
-    if (btnResume) btnResume.addEventListener('click', togglePause);
-
-    function resetGameState() {
-        currentLocation = 'Mouth';
-        currentLocationEl.textContent = 'Mouth';
-        player.setAttribute('transform', 'translate(410, 118)'); 
-        updateTargetableOrgans();
-        showMessage("Game restarted. Starting at the Mouth.");
-        infoTitle.textContent = "Hover over an organ";
-        infoDesc.textContent = "Detailed biochemistry information will appear here.";
-        infoTravel.textContent = "";
-        isMoving = false;
-        showCurrentLocationInfo();
-    }
-
-    if (btnRestart) btnRestart.addEventListener('click', () => {
-        resetGameState();
-        if (isPaused) togglePause();
-        startCinematic();
-    });
-
-    if (btnLeave) btnLeave.addEventListener('click', () => {
-        resetGameState();
-        if (isPaused) togglePause();
-        switchView(mainMenu);
-    });
-
-    if (pauseToggleSfx) pauseToggleSfx.addEventListener('change', (e) => {
-        sfxEnabled = e.target.checked;
-        toggleSfx.checked = sfxEnabled;
-    });
-
-    if (pauseToggleMusic) pauseToggleMusic.addEventListener('change', (e) => {
-        musicEnabled = e.target.checked;
-        toggleMusic.checked = musicEnabled;
-    });
+    const toggleSfx = document.getElementById('toggle-sfx');
+    const toggleMusic = document.getElementById('toggle-music');
+    if (toggleSfx) toggleSfx.addEventListener('change', (e) => { sfxEnabled = e.target.checked; });
+    if (toggleMusic) toggleMusic.addEventListener('change', (e) => { musicEnabled = e.target.checked; });
 
     const organs = document.querySelectorAll('.organ');
     const infoTitle = document.getElementById('info-title');
@@ -276,6 +267,90 @@ document.addEventListener('DOMContentLoaded', () => {
     const infoTravel = document.getElementById('info-travel');
     const btnEnterLevel = document.getElementById('btn-enter-level');
     
+    // ---- OBJECTIVE TRACKING ----
+    const completedOrgans = new Set();
+    let freeRoam = false;
+
+    function showObjectiveToast() {
+        const toast = document.getElementById('objective-toast');
+        if (!toast) return;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function showFreeRoamAlert() {
+        const alertEl = document.getElementById('free-roam-alert');
+        if (!alertEl) return;
+        alertEl.style.opacity = '1';
+        alertEl.style.transform = 'translate(-50%, -50%) scale(1)';
+        setTimeout(() => {
+            alertEl.style.opacity = '0';
+            alertEl.style.transform = 'translate(-50%, -50%) scale(0.85)';
+        }, 3000);
+    }
+
+    function markObjectiveComplete(organName) {
+        completedOrgans.add(organName);
+        if (organName === 'Mouth') {
+            const el = document.getElementById('objective-mouth');
+            if (el) {
+                el.classList.add('completed');
+                const icon = el.querySelector('.objective-icon');
+                if (icon) icon.textContent = '✓';
+            }
+            // Unlock next objective
+            const nextObj = document.getElementById('objective-stomach');
+            if (nextObj) nextObj.classList.remove('locked');
+            
+            // Relabel button at Mouth
+            if (currentLocation === 'Mouth') {
+                btnEnterLevel.textContent = "Enter the Esophagus";
+            }
+        } else if (organName === 'Stomach') {
+            const el = document.getElementById('objective-stomach');
+            if (el) {
+                el.classList.add('completed');
+                const icon = el.querySelector('.objective-icon');
+                if (icon) icon.textContent = '✓';
+            }
+            // Unlock Objective 3
+            const nextObj = document.getElementById('objective-stabilize');
+            if (nextObj) nextObj.classList.remove('locked');
+        } else if (organName === 'Stabilize') {
+            const el = document.getElementById('objective-stabilize');
+            if (el) {
+                el.classList.add('completed');
+                const icon = el.querySelector('.objective-icon');
+                if (icon) icon.textContent = '✓';
+            }
+            // Relabel button at Stomach
+            if (currentLocation === 'Stomach') {
+                btnEnterLevel.textContent = "Enter the Intestines";
+            }
+        }
+    }
+
+    function canEnterOrgan(organName) {
+        if (freeRoam) return true;
+        
+        // Mouth is always allowed for Objective 1
+        if (organName === 'Mouth') return true;
+        
+        // For others, Obj 1 (Mouth) must be complete
+        if (!completedOrgans.has('Mouth')) return false;
+
+        // If trying to enter anything other than Stomach after Mouth, 
+        // they must have reached Stomach (Obj 2 done)
+        if (organName !== 'Stomach' && !completedOrgans.has('Stomach')) return false;
+
+        return true;
+    }
+
+    // Called by engine.js after winning a level
+    window.onOrganComplete = function(organName) {
+        markObjectiveComplete(organName);
+    };
+
     // Player State
     const player = document.getElementById('player-character');
     const currentLocationEl = document.getElementById('current-location');
@@ -355,6 +430,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function showLockToast() {
+        const toast = document.getElementById('objective-toast');
+        if (!toast) return;
+        toast.innerHTML = '⚠️ Complete the current objective first.<br><span style="font-size:0.9rem;color:#ffaa33;">The path is blocked by cellular debris.</span>';
+        toast.style.borderColor = 'rgba(255, 170, 51, 0.4)';
+        toast.style.color = '#ffaa33';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
     // Hover Interaction -> Updates Fixed Panel
     organs.forEach(organ => {
         organ.addEventListener('mouseenter', (e) => {
@@ -371,9 +456,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 infoTravel.textContent = "You are currently here.";
                 infoTravel.style.color = "#66ff66";
                 btnEnterLevel.classList.remove('hidden');
+                
+                // Update button text based on state
+                if (targetID === 'Mouth' && completedOrgans.has('Mouth') && !completedOrgans.has('Stomach')) {
+                    btnEnterLevel.textContent = "Enter the Esophagus";
+                } else if (targetID === 'Stomach' && completedOrgans.has('Stomach') && !completedOrgans.has('Stabilize')) {
+                    btnEnterLevel.textContent = "Stabilize Stomach";
+                } else if (targetID === 'Stomach' && completedOrgans.has('Stabilize')) {
+                    btnEnterLevel.textContent = "Enter the Intestines";
+                } else {
+                    btnEnterLevel.textContent = "Enter Organ";
+                }
             } else if (graph[currentLocation] && graph[currentLocation][targetID]) {
-                infoTravel.textContent = "Click to travel here.";
-                infoTravel.style.color = "#3388ff";
+                if (!canEnterOrgan(targetID)) {
+                    infoTravel.textContent = "Locked: Complete previous objectives.";
+                    infoTravel.style.color = "#ffaa33";
+                } else {
+                    infoTravel.textContent = "Click to travel here.";
+                    infoTravel.style.color = "#3388ff";
+                }
                 btnEnterLevel.classList.add('hidden');
             } else {
                 infoTravel.textContent = "No direct connection from current location.";
@@ -405,6 +506,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (!canEnterOrgan(targetID)) {
+                showLockToast();
+                return;
+            }
+
             const connections = graph[currentLocation];
             if (connections && connections[targetID]) {
                 const pathId = connections[targetID];
@@ -429,6 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pathLength = pathElement.getTotalLength();
         const playerAnimDuration = 800;
         let startTime = null;
+        let interrupted = false;
 
         function animateMove(currentTime) {
             if (!startTime) startTime = currentTime;
@@ -437,6 +544,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Easing
             const easeProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            // Interruption check: Mouth -> Stomach at 25% (Not in Free Roam)
+            if (!freeRoam && currentLocation === 'Mouth' && targetID === 'Stomach' && easeProgress >= 0.25 && !interrupted) {
+                interrupted = true;
+                showMidTravelInterruption();
+                return; // Stop animation loop
+            }
 
             const currentPoint = pathElement.getPointAtLength(easeProgress * pathLength);
             
@@ -450,9 +564,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentLocationEl.textContent = targetName;
                 showMessage(`Arrived at ${targetName}.`);
                 updateTargetableOrgans();
-                
-                
-                // Update panel explicitly after moving
                 showCurrentLocationInfo();
             }
         }
@@ -460,13 +571,291 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animateMove);
     }
 
-    // Action Game Entry
-    btnEnterLevel.addEventListener('click', () => {
-        switchView(levelView);
-        // Start the Action RPG Engine for the current organ
-        if (window.startActionGame) {
-            window.startActionGame(currentLocation);
+    // ---- PRE-BATTLE CINEMATIC DATA ----
+    const preBattleScenes = {
+        'Mouth': [
+            {
+                bg: 'url("assets/mouth_inside.png")',
+                speaker: 'Dr. Şükrü',
+                text: "We've entered the oral cavity. The protective nano-bubble is holding steady — but I'm detecting foreign pathogen signatures all around us.",
+                charLeft: 'none',
+                charRight: 'none',
+                activeChar: 'none',
+                showNanoSukru: true
+            },
+            {
+                bg: 'url("assets/mouth_inside.png")',
+                speaker: 'Gani',
+                text: "Doctor, can you hear me? My throat feels like it's on fire... Are you inside?",
+                charLeft: 'url("assets/patient_gani.png")',
+                charRight: 'none',
+                activeChar: 'left',
+                showNanoSukru: false
+            },
+            {
+                bg: 'url("assets/mouth_inside.png")',
+                speaker: 'Dr. Şükrü',
+                text: "Loud and clear, Gani. The mouth is infested — bacteria and viral particles are multiplying fast. I need to clear them out before moving deeper.",
+                charLeft: 'url("assets/patient_gani.png")',
+                charRight: 'none',
+                activeChar: 'none',
+                showNanoSukru: true
+            },
+            {
+                bg: 'url("assets/mouth_inside.png")',
+                speaker: 'System',
+                text: "MISSION: Eliminate all oral pathogens. Initiating nano-cell combat mode.",
+                charLeft: 'none',
+                charRight: 'none',
+                activeChar: 'none',
+                showNanoSukru: false,
+                flash: true
+            }
+        ],
+        'Stomach': [
+            {
+                bg: 'radial-gradient(circle at center, #800000, #330000)',
+                speaker: 'Dr. Şükrü',
+                text: "We've reached the stomach, Gani. But it's in chaos. The acid levels are spiking, and the protective mucus barrier is thinning.",
+                charLeft: 'url("assets/patient_gani.png")',
+                charRight: 'none',
+                activeChar: 'none',
+                showNanoSukru: true
+            },
+            {
+                bg: 'radial-gradient(circle at center, #800000, #330000)',
+                speaker: 'Dr. Şükrü',
+                text: "The stomach must maintain a very specific pH balance (around 1.5 - 3.5). If it's too acidic, the wall dissolves. If it's too basic, pathogens survive and enzymes fail.",
+                charLeft: 'none',
+                charRight: 'url("assets/dr_sukru.png")',
+                activeChar: 'right',
+                showNanoSukru: false
+            },
+            {
+                bg: 'radial-gradient(circle at center, #800000, #330000)',
+                speaker: 'Dr. Şükrü',
+                text: "Protein digestion depends on Pepsin, which ONLY works in this acidic sweet spot. We must balance HCl, Bicarbonate buffers, and Mucus secretion to stabilize the environment.",
+                charLeft: 'url("assets/patient_gani.png")',
+                charRight: 'url("assets/dr_sukru.png")',
+                activeChar: 'none',
+                showNanoSukru: true
+            },
+            {
+                bg: 'radial-gradient(circle at center, #800000, #330000)',
+                speaker: 'System',
+                text: "MISSION: Stabilize pH and restore barrier integrity. Digestion protocol initiated.",
+                charLeft: 'none',
+                charRight: 'none',
+                activeChar: 'none',
+                showNanoSukru: false,
+                flash: true
+            }
+        ]
+    };
+
+    // Generic pre-battle scene for any organ without a specific one
+    function getGenericPreBattleScenes(organName) {
+        return [
+            {
+                bg: 'linear-gradient(to bottom, #0a0e17, #161b22)',
+                speaker: 'Dr. Şükrü',
+                text: `Entering the ${organName}. Pathogen concentrations are high — the nano-bubble's sensors are going off the charts.`,
+                charLeft: 'url("assets/patient_gani.png")',
+                charRight: 'url("assets/dr_sukru.png")',
+                activeChar: 'right'
+            },
+            {
+                bg: 'linear-gradient(to bottom, #0a0e17, #161b22)',
+                speaker: 'System',
+                text: `MISSION: Clear all hostiles from the ${organName}. Deploying combat protocols now.`,
+                charLeft: 'none',
+                charRight: 'none',
+                activeChar: 'none',
+                flash: true
+            }
+        ];
+    }
+
+    // ---- PRE-BATTLE CINEMATIC CONTROLLER ----
+    let preBattleSceneIndex = 0;
+    let preBattleSceneList = [];
+    let preBattleTypewriterTimeout = null;
+    let preBattlePendingOrgan = null;
+
+    function startPreBattleCinematic(organName) {
+        // Stop any running intro typewriter before starting ours
+        if (typewriterTimeout) { clearTimeout(typewriterTimeout); typewriterTimeout = null; }
+        dialogueText.textContent = '';
+        preBattlePendingOrgan = organName;
+        preBattleSceneList = preBattleScenes[organName] || getGenericPreBattleScenes(organName);
+        preBattleSceneIndex = 0;
+        switchView(cinematicView);
+        renderPreBattleScene();
+    }
+
+    function renderPreBattleScene() {
+        if (preBattleSceneIndex >= preBattleSceneList.length) {
+            // All scenes done — launch the actual combat or mini-game
+            if (preBattlePendingOrgan === 'Stomach' && !completedOrgans.has('Stomach')) {
+                // This shouldn't happen based on btn click logic, but safety check
+                switchView(levelView);
+                if (window.startActionGame) window.startActionGame('Stomach');
+            } else if (preBattlePendingOrgan === 'Stomach' && completedOrgans.has('Stomach')) {
+                // Launch Stabilization Mini-game
+                const stomachView = document.getElementById('stomach-view');
+                switchView(stomachView);
+                if (window.StomachGame) window.StomachGame.start();
+            } else {
+                switchView(levelView);
+                if (window.startActionGame) window.startActionGame(preBattlePendingOrgan);
+            }
+            return;
         }
+
+        const scene = preBattleSceneList[preBattleSceneIndex];
+
+        // Background
+        const bg = document.getElementById('cinematic-bg');
+        if (scene.bg.startsWith('url')) {
+            bg.style.backgroundImage = scene.bg;
+            bg.style.background = '';
+        } else {
+            bg.style.background = scene.bg;
+            bg.style.backgroundImage = '';
+        }
+
+        // Speaker & text
+        dialogueSpeaker.textContent = scene.speaker;
+        dialogueText.textContent = '';
+
+        // Characters
+        const charLeft = document.getElementById('cinematic-char-left');
+        const charRight = document.getElementById('cinematic-char-right');
+
+        if (scene.charLeft && scene.charLeft !== 'none') {
+            charLeft.style.backgroundImage = scene.charLeft;
+            charLeft.classList.add('show');
+            charLeft.classList.toggle('dim', scene.activeChar !== 'left');
+        } else {
+            charLeft.classList.remove('show');
+        }
+
+        if (scene.charRight && scene.charRight !== 'none') {
+            charRight.style.backgroundImage = scene.charRight;
+            charRight.classList.add('show');
+            charRight.classList.toggle('dim', scene.activeChar !== 'right');
+        } else {
+            charRight.classList.remove('show');
+        }
+
+        // Nano-Sukru overlay
+        const nanoSukru = document.getElementById('nano-sukru-anim');
+        if (scene.showNanoSukru) {
+            nanoSukru.classList.remove('hidden');
+        } else {
+            nanoSukru.classList.add('hidden');
+        }
+
+        // Nano-cell fly-in (reset)
+        document.getElementById('nano-cell-anim').classList.remove('fly-in');
+
+        // Shrink reset
+        charRight.classList.remove('shrink');
+
+        // Flash
+        if (scene.flash) {
+            shrinkFlash.classList.add('active');
+            setTimeout(() => shrinkFlash.classList.remove('active'), 2000);
+        }
+
+        // Typewriter
+        if (preBattleTypewriterTimeout) clearTimeout(preBattleTypewriterTimeout);
+        let i = 0;
+        const txt = scene.text;
+        function typeWriter() {
+            if (i < txt.length) {
+                dialogueText.textContent += txt.charAt(i++);
+                preBattleTypewriterTimeout = setTimeout(typeWriter, 28);
+            }
+        }
+        typeWriter();
+    }
+
+
+    // Action Game Entry — now shows pre-battle cinematic first
+    btnEnterLevel.addEventListener('click', () => {
+        if (freeRoam) {
+            showFreeRoamAlert();
+            return;
+        }
+
+        // Special case: Stomach Stabilization (Objective 3)
+        if (currentLocation === 'Stomach' && completedOrgans.has('Stomach') && !completedOrgans.has('Stabilize')) {
+            isPreBattleCinematic = true;
+            startPreBattleCinematic('Stomach');
+            return;
+        }
+
+        // Special case: Mouth -> Esophagus (Objective 2)
+        if (currentLocation === 'Mouth' && completedOrgans.has('Mouth')) {
+            // Player is re-entering Mouth to go to Esophagus
+            // Trigger the Mouth -> Stomach travel logic
+            const connections = graph['Mouth'];
+            if (connections && connections['Stomach']) {
+                movePlayer(connections['Stomach'], 'Stomach', 'Stomach');
+            }
+            return;
+        }
+
+        isPreBattleCinematic = true;
+        startPreBattleCinematic(currentLocation);
+    });
+
+    // Mid-Travel Logic
+    function showMidTravelInterruption() {
+        const overlay = document.getElementById('mid-travel-overlay');
+        overlay.classList.remove('hidden');
+    }
+
+    document.getElementById('btn-start-esophagus').addEventListener('click', () => {
+        document.getElementById('mid-travel-overlay').classList.add('hidden');
+        const esoView = document.getElementById('esophagus-view');
+        switchView(esoView);
+        if (window.EsophagusGame) {
+            window.EsophagusGame.start();
+        }
+    });
+
+    window.onEsophagusComplete = function() {
+        switchView(gameView);
+        if (window.EsophagusGame) window.EsophagusGame.stop();
+        
+        // Complete the move to Stomach
+        const stomach = document.getElementById('organ-Stomach');
+        const point = { x: 460, y: 490 }; // Midpoint of Stomach or use SVG path end
+        player.setAttribute('transform', `translate(${point.x}, ${point.y})`);
+        
+        isMoving = false;
+        currentLocation = 'Stomach';
+        currentLocationEl.textContent = 'Stomach';
+        markObjectiveComplete('Stomach');
+        showMessage(`Successfully navigated the esophagus. Arrived at Stomach!`);
+        updateTargetableOrgans();
+        showCurrentLocationInfo();
+    };
+
+    window.onStomachStabilized = function() {
+        switchView(gameView);
+        if (window.StomachGame) window.StomachGame.stop();
+        markObjectiveComplete('Stabilize');
+        showMessage(`Stomach stabilized! pH balanced and mucus barrier restored.`);
+        updateTargetableOrgans();
+        showCurrentLocationInfo();
+    };
+
+    document.getElementById('btn-eso-retry').addEventListener('click', () => {
+        document.getElementById('eso-game-over').classList.add('hidden');
+        if (window.EsophagusGame) window.EsophagusGame.start();
     });
 
     const btnExitLevel = document.getElementById('btn-exit-level');
