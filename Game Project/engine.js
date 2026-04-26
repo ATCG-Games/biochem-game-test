@@ -87,6 +87,125 @@ class Projectile {
 }
 
 let projectiles = [];
+let enemies = [];
+let enemyProjectiles = [];
+let spawnTimer = 0;
+let nextSpawnInterval = 1.0;
+const XP_THRESHOLDS = [0, 100, 300, 600];
+
+class EnemyProjectile {
+    constructor(x, y, targetX, targetY) {
+        this.x = x;
+        this.y = y;
+        this.speed = 300;
+        this.radius = 4;
+        this.color = '#ff6666';
+        const dx = targetX - x;
+        const dy = targetY - y;
+        const length = Math.sqrt(dx*dx + dy*dy) || 1;
+        this.vx = (dx / length) * this.speed;
+        this.vy = (dy / length) * this.speed;
+        this.active = true;
+    }
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        if (this.x < -50 || this.x > canvas.width + 50 || this.y < -50 || this.y > canvas.height + 50) this.active = false;
+    }
+    draw(ctx) {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+class Enemy {
+    constructor(x, y, level) {
+        this.x = x;
+        this.y = y;
+        const bonusHp = Math.floor(Math.random() * level);
+        this.maxHp = Math.floor(Math.random() * 5) + 1 + bonusHp; // 1 to 5 + bonus
+        this.hp = this.maxHp;
+        this.radius = 12 + this.maxHp * 3; // scales with HP
+        this.speed = Math.max(30, 120 - (this.maxHp * 12) + (level * 10)); // larger are slower
+        this.color = '#ff3333';
+        this.active = true;
+    }
+    
+    update(dt, player) {
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        
+        this.x += (dx / dist) * this.speed * dt;
+        this.y += (dy / dist) * this.speed * dt;
+        
+        // Player collision
+        if (dist < this.radius + player.width/2 && player.invulnerable <= 0) {
+            player.hp -= 10; // Deal 10 damage
+            player.invulnerable = 1.0; // 1 second invulnerability
+        }
+    }
+    
+    draw(ctx) {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        
+        // Spiky look for microbes
+        for(let i=0; i<12; i++) {
+            const angle = (i/12) * Math.PI * 2;
+            const spikeDist = i % 2 === 0 ? this.radius + 6 : this.radius;
+            const spikeX = this.x + Math.cos(angle) * spikeDist;
+            const spikeY = this.y + Math.sin(angle) * spikeDist;
+            if (i === 0) ctx.moveTo(spikeX, spikeY);
+            else ctx.lineTo(spikeX, spikeY);
+        }
+        ctx.closePath();
+        ctx.fill();
+        
+        // HP bar
+        if (this.hp < this.maxHp) {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(this.x - 10, this.y - this.radius - 12, 20, 4);
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(this.x - 10, this.y - this.radius - 12, 20 * (this.hp / this.maxHp), 4);
+        }
+    }
+}
+
+class ShootingEnemy extends Enemy {
+    constructor(x, y, level) {
+        super(x, y, level);
+        this.color = '#cc33ff'; // Purple color for shooters
+        this.fireTimer = 0;
+        this.fireRate = 2.0; // Fire every 2 seconds
+        this.stopDistance = 250; // Stop and shoot when this close
+    }
+    
+    update(dt, player) {
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        
+        if (dist > this.stopDistance) {
+            this.x += (dx / dist) * this.speed * dt;
+            this.y += (dy / dist) * this.speed * dt;
+        } else {
+            this.fireTimer += dt;
+            if (this.fireTimer >= this.fireRate) {
+                this.fireTimer = 0;
+                enemyProjectiles.push(new EnemyProjectile(this.x, this.y, player.x, player.y));
+            }
+        }
+        
+        // Player collision
+        if (dist < this.radius + player.width/2 && player.invulnerable <= 0) {
+            player.hp -= 10;
+            player.invulnerable = 1.0;
+        }
+    }
+}
 
 document.addEventListener('keydown', (e) => {
     if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
@@ -115,6 +234,7 @@ class Player {
         this.sprite.onload = () => { this.spriteLoaded = true; };
         this.fireRate = 0.15; // Fire every 0.15s
         this.fireTimer = 0;
+        this.invulnerable = 0;
     }
 
     update(dt) {
@@ -139,6 +259,10 @@ class Player {
         // Keep player in bounds
         this.x = Math.max(this.width/2, Math.min(canvas.width - this.width/2, this.x));
         this.y = Math.max(this.height/2, Math.min(canvas.height - this.height/2, this.y));
+
+        if (this.invulnerable > 0) {
+            this.invulnerable -= dt;
+        }
 
         // Fire towards mouse when clicked
         this.fireTimer += dt;
@@ -167,7 +291,14 @@ class Player {
         if (this.spriteLoaded) {
             const imgW = 30; // Scale sprite appropriately for the circle
             const imgH = 38;
+            
+            ctx.save();
+            if (this.invulnerable > 0) {
+                // Blink effect
+                ctx.globalAlpha = Math.sin(performance.now() * 0.02) * 0.5 + 0.5;
+            }
             ctx.drawImage(this.sprite, this.x - imgW/2, this.y - imgH/2, imgW, imgH);
+            ctx.restore();
         }
     }
 }
@@ -223,19 +354,128 @@ for (let i = 0; i < 50; i++) {
     bgParticles.push(new BackgroundParticle());
 }
 
+function checkLevelUp() {
+    if (player.level < 4 && player.xp >= XP_THRESHOLDS[player.level]) {
+        player.level++;
+        player.hp = Math.min(player.maxHp, player.hp + 20); // Heal on level up
+        
+        const levelSpan = document.getElementById('player-level');
+        if (levelSpan) levelSpan.textContent = player.level;
+
+        if (player.level >= 4) {
+            // YOU WIN
+            gameRunning = false;
+            const gameOverScreen = document.getElementById('game-over-screen');
+            gameOverScreen.classList.remove('hidden');
+            gameOverScreen.querySelector('h1').textContent = "YOU WIN!";
+            gameOverScreen.querySelector('h1').style.color = "#66ff66";
+            const btn = document.getElementById('btn-respawn');
+            btn.textContent = "Return to Map";
+            btn.onclick = function() {
+                gameOverScreen.classList.add('hidden');
+                document.getElementById('level-view').classList.remove('active');
+                document.getElementById('level-view').classList.add('hidden');
+                document.getElementById('game-view').classList.remove('hidden');
+                document.getElementById('game-view').classList.add('active');
+                
+                // Restore original button for future deaths
+                gameOverScreen.querySelector('h1').textContent = "YOU DIED";
+                gameOverScreen.querySelector('h1').style.color = "#ff3333";
+                btn.textContent = "Respawn at Heart";
+                btn.onclick = () => location.reload(); 
+            };
+        }
+    }
+}
+
 function update(dt) {
     player.update(dt);
+    
+    // Spawn enemies if in Mouth
+    if (gameState.levelName === 'Mouth') {
+        spawnTimer += dt;
+        if (spawnTimer >= nextSpawnInterval) {
+            spawnTimer = 0;
+            nextSpawnInterval = ((Math.random() * 1.5) + 0.2) / player.level; 
+            
+            // Spawn from outside the screen (360 degrees)
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.max(canvas.width, canvas.height) / 2 + 100;
+            const spawnX = player.x + Math.cos(angle) * distance;
+            const spawnY = player.y + Math.sin(angle) * distance;
+            
+            if (player.level >= 2 && Math.random() < 0.3) {
+                enemies.push(new ShootingEnemy(spawnX, spawnY, player.level));
+            } else {
+                enemies.push(new Enemy(spawnX, spawnY, player.level));
+            }
+        }
+    }
     
     bgParticles.forEach(p => p.update(dt));
     
     projectiles.forEach(p => p.update(dt));
+    enemies.forEach(e => e.update(dt, player));
+    enemyProjectiles.forEach(p => p.update(dt));
+    
+    // Enemy Projectile Collision with player
+    for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+        const p = enemyProjectiles[i];
+        const dx = p.x - player.x;
+        const dy = p.y - player.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < p.radius + player.width/2) {
+            p.active = false;
+            if (player.invulnerable <= 0) {
+                player.hp -= 5;
+                player.invulnerable = 1.0;
+            }
+        }
+    }
+    
+    // Collisions: Projectile vs Enemy
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            const e = enemies[j];
+            const dx = p.x - e.x;
+            const dy = p.y - e.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist < p.radius + e.radius) {
+                // Hit
+                p.active = false;
+                e.hp -= 1;
+                if (e.hp <= 0) {
+                    e.active = false;
+                    player.xp += e.maxHp * 10;
+                    checkLevelUp();
+                }
+                break; // One projectile hits one enemy
+            }
+        }
+    }
+    
     projectiles = projectiles.filter(p => p.active);
+    enemies = enemies.filter(e => e.active);
+    enemyProjectiles = enemyProjectiles.filter(p => p.active);
     
     // Update UI
     const hpFill = document.getElementById('player-hp-fill');
     if (hpFill) {
         const hpPercent = Math.max(0, (player.hp / player.maxHp) * 100);
         hpFill.style.width = hpPercent + '%';
+    }
+    const xpSpan = document.getElementById('player-xp');
+    if (xpSpan) xpSpan.textContent = player.xp;
+
+    // Check Player Death
+    if (player.hp <= 0 && gameRunning) {
+        gameRunning = false;
+        const gameOverScreen = document.getElementById('game-over-screen');
+        gameOverScreen.classList.remove('hidden');
+        const btn = document.getElementById('btn-respawn');
+        btn.onclick = () => location.reload();
     }
 }
 
@@ -277,6 +517,12 @@ function draw() {
     // Draw projectiles
     projectiles.forEach(p => p.draw(ctx));
 
+    // Draw enemies
+    enemies.forEach(e => e.draw(ctx));
+
+    // Draw enemy projectiles
+    enemyProjectiles.forEach(p => p.draw(ctx));
+
     // Draw entities
     player.draw(ctx);
 }
@@ -299,7 +545,17 @@ window.startActionGame = function(organName) {
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     player.hp = player.maxHp;
+    player.invulnerable = 0;
+    player.level = 1;
+    player.xp = 0;
     projectiles = []; // Clear old projectiles
+    enemies = []; // Clear old enemies
+    enemyProjectiles = [];
+    spawnTimer = 0;
+    
+    document.getElementById('player-level').textContent = "1";
+    document.getElementById('player-xp').textContent = "0";
+    document.getElementById('game-over-screen').classList.add('hidden');
     
     gameState.lastTime = performance.now();
     animationFrameId = requestAnimationFrame(gameLoop);
