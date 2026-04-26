@@ -18,10 +18,10 @@ This game is an immersive, educational Action-RPG designed to teach high-school 
 *   **Real-World Science**: Every organ features detailed tooltips explaining its biochemical function (e.g., ATP generation in the brain, glycogen storage in the liver, HCl production in the stomach).
 *   **Visual Learning**: See where blood flows through the body by clicking the organs.
 
-### 🛡️ Nano-Scale Combat (Vampire Survivors Style) (WORK IN PROGRESS)
+### 🛡️ Nano-Scale Combat
 *   **Enter the Microverse**: Dive inside specific organs for action-packed combat levels.
 *   **Shoot to Cure**: Use Dr. Şükrü's nano-bubble to fire projectiles at cellular threats.
-*   **Progressive Difficulty**: Level up, gain XP, and manage your HP as you fight through organic environments.
+*   **Progressive Difficulty**: Earn XP, complete stages (includes a final boss in the last stage), and manage your HP as you fight through organic environments.
 
 ---
 
