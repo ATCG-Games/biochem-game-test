@@ -153,9 +153,106 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let isPreBattleCinematic = false; // declared here so the click handler can see it
+    let isEndingCinematic = false;
+
+    const endingCinematicScenes = [
+        {
+            bg: 'linear-gradient(to bottom, #0a0e17, #161b22)',
+            speaker: 'Dr. Şükrü',
+            text: "The target area is cleared. The pathogens are neutralized.",
+            charLeft: 'none',
+            charRight: 'url("assets/dr_sukru.png")',
+            activeChar: 'right'
+        },
+        {
+            bg: 'linear-gradient(to bottom, #0a0e17, #161b22)',
+            speaker: 'Gani',
+            text: "I feel so much better already, Doctor. The pain is fading away.",
+            charLeft: 'url("assets/patient_gani.png")',
+            charRight: 'url("assets/dr_sukru.png")',
+            activeChar: 'left'
+        },
+        {
+            bg: 'linear-gradient(to bottom, #0a0e17, #161b22)',
+            speaker: 'Dr. Şükrü',
+            text: "We've only just begun, Gani. But the immediate threat is neutralized. I am returning to the extraction point.",
+            charLeft: 'url("assets/patient_gani.png")',
+            charRight: 'url("assets/dr_sukru.png")',
+            activeChar: 'right'
+        },
+        {
+            bg: 'linear-gradient(to bottom, #111, #333)',
+            speaker: 'System',
+            text: "DEMO COMPLETED. Thank you for playing!",
+            charLeft: 'none',
+            charRight: 'none',
+            activeChar: 'none',
+            flash: true
+        }
+    ];
+
+    function startEndingCinematic() {
+        isPreBattleCinematic = false;
+        isEndingCinematic = true;
+        switchView(cinematicView);
+        currentScene = 0;
+        renderEndingScene();
+    }
+
+    function renderEndingScene() {
+        if (currentScene >= endingCinematicScenes.length) {
+            exitToMainMenu();
+            return;
+        }
+
+        const scene = endingCinematicScenes[currentScene];
+        cinematicBg.style.backgroundImage = scene.bg;
+        dialogueSpeaker.textContent = scene.speaker;
+        dialogueText.textContent = '';
+        
+        if (scene.charLeft && scene.charLeft !== 'none') {
+            cinematicCharLeft.style.backgroundImage = scene.charLeft;
+            cinematicCharLeft.classList.add('show');
+            if (scene.activeChar === 'left') cinematicCharLeft.classList.remove('dim');
+            else cinematicCharLeft.classList.add('dim');
+        } else {
+            cinematicCharLeft.classList.remove('show');
+        }
+
+        if (scene.charRight && scene.charRight !== 'none') {
+            cinematicCharRight.style.backgroundImage = scene.charRight;
+            cinematicCharRight.classList.add('show');
+            if (scene.activeChar === 'right') cinematicCharRight.classList.remove('dim');
+            else cinematicCharRight.classList.add('dim');
+        } else {
+            cinematicCharRight.classList.remove('show');
+        }
+
+        cinematicCharRight.classList.remove('shrink');
+        document.getElementById('nano-cell-anim').classList.remove('fly-in');
+        document.getElementById('nano-sukru-anim').classList.add('hidden');
+        
+        if (typewriterTimeout) clearTimeout(typewriterTimeout);
+        let i = 0;
+        const txt = scene.text;
+        function typeWriter() {
+            if (i < txt.length) {
+                dialogueText.textContent += txt.charAt(i);
+                i++;
+                typewriterTimeout = setTimeout(typeWriter, 30);
+            }
+        }
+        typeWriter();
+        
+        if (scene.flash) {
+            shrinkFlash.classList.add('active');
+            setTimeout(() => shrinkFlash.classList.remove('active'), 2000);
+        }
+    }
 
     function startCinematic() {
         isPreBattleCinematic = false;
+        isEndingCinematic = false;
         switchView(cinematicView);
         currentScene = 0;
         renderScene();
@@ -165,6 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isPreBattleCinematic) {
             preBattleSceneIndex++;
             renderPreBattleScene();
+        } else if (isEndingCinematic) {
+            currentScene++;
+            renderEndingScene();
         } else {
             currentScene++;
             renderScene();
@@ -195,11 +295,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function resetGameState() {
+        // Reset state variables
+        currentLocation = 'Mouth';
+        isMoving = false;
+        if (completedOrgans) completedOrgans.clear();
+        
+        // Reset player pos
+        const playerEl = document.getElementById('player-character');
+        if (playerEl) {
+            playerEl.setAttribute('transform', `translate(410, 118)`);
+        }
+
+        // Reset Objective UI
+        const objMouth = document.getElementById('objective-mouth');
+        if (objMouth) {
+            objMouth.classList.remove('completed');
+            const icon = objMouth.querySelector('.objective-icon');
+            if (icon) icon.textContent = '1';
+        }
+
+        const objStomach = document.getElementById('objective-stomach');
+        if (objStomach) {
+            objStomach.classList.remove('completed');
+            objStomach.classList.add('locked');
+            const icon = objStomach.querySelector('.objective-icon');
+            if (icon) icon.textContent = '2';
+        }
+
+        const objStabilize = document.getElementById('objective-stabilize');
+        if (objStabilize) {
+            objStabilize.classList.remove('completed');
+            objStabilize.classList.add('locked');
+            const icon = objStabilize.querySelector('.objective-icon');
+            if (icon) icon.textContent = '3';
+        }
+
+        const btnEnterLvl = document.getElementById('btn-enter-level');
+        if (btnEnterLvl) {
+            btnEnterLvl.textContent = "Enter Organ";
+            btnEnterLvl.classList.add('hidden');
+        }
+
+        if (typeof updateTargetableOrgans === 'function') {
+            updateTargetableOrgans();
+        }
+        if (typeof showCurrentLocationInfo === 'function') {
+            showCurrentLocationInfo();
+        }
+    }
+
     function exitToMainMenu() {
         isMapPaused = false;
         if (mapPauseMenu) mapPauseMenu.classList.add('hidden');
         switchView(mainMenu);
-        // Reset any temporary state if needed
+        resetGameState();
     }
 
     if (btnMapResume) btnMapResume.addEventListener('click', toggleMapPause);
@@ -236,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnPlay.addEventListener('click', () => { 
         freeRoam = false;
+        resetGameState();
         document.getElementById('objective-panel').classList.remove('hidden');
         startCinematic(); 
     });
@@ -327,6 +478,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentLocation === 'Stomach') {
                 btnEnterLevel.textContent = "Enter the Intestines";
             }
+            startEndingCinematic();
+        } else {
+            startEndingCinematic();
         }
     }
 

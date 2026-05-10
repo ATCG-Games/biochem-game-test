@@ -217,7 +217,8 @@ class Enemy {
     constructor(x, y, level) {
         this.x = x; this.y = y;
         const bonus = Math.floor(Math.random() * level);
-        this.maxHp = Math.floor(Math.random() * 4) + 2 + bonus;
+        const baseHp = Math.floor(Math.random() * 4) + 2 + bonus;
+        this.maxHp = Math.max(1, Math.ceil(baseHp * 0.6)); // 40% decrease overall
         this.hp = this.maxHp;
         this.radius = 12 + this.maxHp * 3;
         this.speed = Math.max(70, 160 - this.maxHp * 8 + level * 12);
@@ -312,7 +313,7 @@ class ShootingEnemy extends Enemy {
 class Boss extends Enemy {
     constructor(x, y) {
         super(x, y, 10);
-        this.maxHp = 300; this.hp = 300;
+        this.maxHp = 180; this.hp = 180; // further 25% decrease from 240
         this.radius = 65;
         this.speed = 60;
         this.color = '#ff0055';
@@ -457,6 +458,7 @@ class Player {
         this.speed = 520;
         this.maxHp = 100; this.hp = 100;
         this.width = 48; this.height = 48;
+        this.damage = 1;
         this.sprite = new Image();
         this.sprite.src = 'assets/dr_sukru.png';
         this.spriteLoaded = false;
@@ -527,6 +529,11 @@ for (let i = 0; i < 60; i++) bgParticles.push(new BgParticle());
 
 // ---- STAGE LOGIC ----
 function startStage(stageNum) {
+    if (stageNum > 1 && stageNum > currentStage && typeof player !== 'undefined') {
+        player.damage += 0.5; // Gain power
+        player.speed += 30;   // Gain speed
+        player.hp = Math.min(player.maxHp, player.hp + 20); // Minor heal
+    }
     currentStage = stageNum;
     const cfg = STAGE_CONFIG[stageNum];
     if (!cfg) return;
@@ -689,7 +696,7 @@ function update(dt) {
             const dx = p.x - e.x, dy = p.y - e.y;
             if (Math.sqrt(dx*dx+dy*dy) < p.radius + e.radius) {
                 p.active = false;
-                e.hp -= 1;
+                e.hp -= player.damage;
                 if (e.hp <= 0) {
                     e.active = false;
                     onEnemyKilled();
