@@ -3,7 +3,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Web-blue?style=flat-square)](https://github.com/ATCG-Games/biochem-game-test)
 [![Tech Stack](https://img.shields.io/badge/Stack-HTML5%20|%20CSS3%20|%20JS-orange?style=flat-square)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
 
-This game is an immersive, educational Action-RPG designed to teach high-school level biology and chemistry. Players currently take on the role of **Dr. Şükrü**, an experimental scientist who shrinks himself to enter the human body and combat diseases from the inside.
+This game is an immersive, educational Action-RPG designed to teach high-school level biology and chemistry. Players currently take on the role of **Dr. Şükrü Shrink**, an experimental scientist who shrinks himself to enter the human body and combat diseases from the inside.
 
 ---
 
